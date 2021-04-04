@@ -49,15 +49,21 @@ public class App {
                 .version(BaseConfig.PROJECT_NAME + " " + BaseConfig.PROJECT_VERSION);
 
         parser.addArgument("-v", "--version").help("Show package version.").action(Arguments.version());
-        parser.addArgument("--verbose")
+
+        var mut = parser.addMutuallyExclusiveGroup();
+        mut.addArgument("--verbose")
                 .help("Raise log level and include lib signal logs.")
                 .action(Arguments.storeTrue());
+        mut.addArgument("--vverbose")
+                .help("Raise log level above --verbose and trace requests and responses.")
+                .action(Arguments.storeTrue());
+
         parser.addArgument("--config")
                 .help("Set the path, where to store the config (Default: $XDG_DATA_HOME/signal-cli , $HOME/.local/share/signal-cli).");
 
         parser.addArgument("-u", "--username").help("Specify your phone number, that will be used for verification.");
 
-        var mut = parser.addMutuallyExclusiveGroup();
+        mut = parser.addMutuallyExclusiveGroup();
         mut.addArgument("--dbus").help("Make request via user dbus.").action(Arguments.storeTrue());
         mut.addArgument("--dbus-system").help("Make request via system dbus.").action(Arguments.storeTrue());
 

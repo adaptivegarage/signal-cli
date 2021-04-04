@@ -31,6 +31,8 @@ import org.asamk.signal.util.SecurityProvider;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.security.Security;
+import java.util.Arrays;
+import java.util.Collections;
 
 public class Main {
 
@@ -38,7 +40,7 @@ public class Main {
         installSecurityProviderWorkaround();
 
         // Configuring the logger needs to happen before any logger is initialized
-        configureLogging(isVerbose(args));
+        configureLogging(getVerbosity(args));
 
         var parser = App.buildArgumentParser();
 
@@ -60,33 +62,40 @@ public class Main {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    private static boolean isVerbose(String[] args) {
+    private static int getVerbosity(String[] args) {
         var parser = ArgumentParsers.newFor("signal-cli").build().defaultHelp(false);
         parser.addArgument("--verbose").action(Arguments.storeTrue());
+        parser.addArgument("--vverbose").action(Arguments.storeTrue());
 
         Namespace ns;
         try {
             ns = parser.parseKnownArgs(args, null);
         } catch (ArgumentParserException e) {
-            return false;
+            return 0;
         }
 
-        return ns.getBoolean("verbose");
+        return Collections.max(Arrays.asList(
+            ns.getBoolean("vverbose") ? 2 : 0,
+            ns.getBoolean("verbose") ? 1 : 0
+        ));
     }
 
-    private static void configureLogging(final boolean verbose) {
-        if (verbose) {
+    private static void configureLogging(final int verbosity) {
+        if (verbosity == 0) {
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
+            System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
+            System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true");
+            System.setProperty("org.slf4j.simpleLogger.showDateTime", "false");
+        } else {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
             System.setProperty("org.slf4j.simpleLogger.showThreadName", "true");
             System.setProperty("org.slf4j.simpleLogger.showShortLogName", "false");
             System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
             System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "yyyy-MM-dd'T'HH:mm:ss.SSSXX");
+            if (verbosity >= 2) {
+                System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
+            }
             LibSignalLogger.initLogger();
-        } else {
-            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
-            System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
-            System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true");
-            System.setProperty("org.slf4j.simpleLogger.showDateTime", "false");
         }
     }
 
